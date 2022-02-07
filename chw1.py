@@ -114,26 +114,28 @@ for a in range(num_busses):
 # Y_2 = Y_bus + Y_g-2 + Y_D
 Y_2 = Y_bus + Y_g2 + Y_D
 
-# Ybus_0
-# since Ybus doesn't include any of the generators,
-# we can directly divide Ybus by 3 to get the line numbers
-# Z0 = 3Z1 for lines
-# Y0 = 1/3 Y1
-Ybus_0 = Y_bus / 3.
+# Y_bus_0
+Y_bus0 = np.zeros(Y_shape, np.complex128)
 
-# Yg_0
-Yg_0 = np.zeros(Y_shape, np.complex128)
+for a in range(num_busses):
 
-for i in range(6):
-    if busData['GenGround'][i] != 0:
-        # gen is grounded and admittance should be included
-        Yg_0[i,i] = -1j / busData['Xg0'][i]
+    # y_ii = y_ii + Y_ij
+    Y_bus0[lineData['From'][a] - 1, lineData['From'][a] - 1] += 1 / (lineData['X, p.u.'][a] * 1j * 3)
+    # y_jj = y_jj + Y_ij
+    Y_bus0[lineData['To'][a] - 1, lineData['To'][a] - 1] += 1 / (lineData['X, p.u.'][a] * 1j* 3)
+    # y_ij = y_ij - Y_ij
+    Y_bus0[lineData['From'][a] - 1, lineData['To'][a] - 1] -= 1 / (lineData['X, p.u.'][a] * 1j* 3)
+    # y_ji = y_ji - Y_ij
+    Y_bus0[lineData['To'][a] - 1, lineData['From'][a] - 1] -= 1 / (lineData['X, p.u.'][a] * 1j* 3)
+    # y_ii = y_ii + B/2_ii (shunt admittance)
+    # should this have the * 3 or is the math different?
+    Y_bus0[lineData['To'][a] - 1, lineData['To'][a] - 1] -= lineData['Bc/2, p.u.'][a] * 1j* 3
+    Y_bus0[lineData['From'][a] - 1, lineData['From'][a] - 1] -= lineData['Bc/2, p.u.'][a] * 1j* 3
 
-#Y_0
-# don't need to change YD becuase all the loads
-# are solidly grounded so 3Zn = 0
-Y_0 = Ybus_0 + Yg_0 + Y_D
+    if busData['GenGround'][a] != 0:
+        Y_bus0[a,a] += 1 / (busData['Xg0'][a] * 1j)
 
+Y_0 = Y_bus0 + Y_D
 
 # Z_0 (Zero Sequence)
 
