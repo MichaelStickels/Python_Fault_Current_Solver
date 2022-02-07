@@ -37,34 +37,58 @@ faultData = input['FaultData'].dropna()
 # Calculate parameters
 Y_shape = (busData.shape[0], busData.shape[0])
 
+num_busses = Y_shape[0]
+
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 # Build Z Busses (Z_0, Z_1, Z_2)
 
-# Y_Bus
-# Y_bus_real = np.zeros(Y_shape, np.np.float64)
-Y_bus_imaginary = np.zeros(Y_shape, np.float64)
+# Y_Bus                                                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Calculate directly as complex?
+Y_bus = np.zeros(Y_shape, np.complex128)
 
-for a in range(lineData.shape[0]):
+for a in range(num_busses):
 
     # y_ii = y_ii + Y_ij
-    Y_bus_imaginary[lineData['From'][a] - 1, lineData['From'][a] - 1] += 1 / lineData['X, p.u.'][a]
+    Y_bus[lineData['From'][a] - 1, lineData['From'][a] - 1] += 1 / (lineData['X, p.u.'][a] * 1j)
     # y_jj = y_jj + Y_ij
-    Y_bus_imaginary[lineData['To'][a] - 1, lineData['To'][a] - 1] += 1 / lineData['X, p.u.'][a]
+    Y_bus[lineData['To'][a] - 1, lineData['To'][a] - 1] += 1 / (lineData['X, p.u.'][a] * 1j)
     # y_ij = y_ij - Y_ij
-    Y_bus_imaginary[lineData['From'][a] - 1, lineData['To'][a] - 1] -= 1 / lineData['X, p.u.'][a]
+    Y_bus[lineData['From'][a] - 1, lineData['To'][a] - 1] -= 1 / (lineData['X, p.u.'][a] * 1j)
     # y_ji = y_ji - Y_ij
-    Y_bus_imaginary[lineData['To'][a] - 1, lineData['From'][a] - 1] -= 1 / lineData['X, p.u.'][a]
+    Y_bus[lineData['To'][a] - 1, lineData['From'][a] - 1] -= 1 / (lineData['X, p.u.'][a] * 1j)
     # y_ii = y_ii + B/2_ii (shunt admittance)
-    Y_bus_imaginary[lineData['To'][a] - 1, lineData['To'][a] - 1] -= lineData['Bc/2, p.u.'][a]
-    Y_bus_imaginary[lineData['From'][a] - 1, lineData['From'][a] - 1] -= lineData['Bc/2, p.u.'][a]
-    
+    Y_bus[lineData['To'][a] - 1, lineData['To'][a] - 1] -= lineData['Bc/2, p.u.'][a] * 1j
+    Y_bus[lineData['From'][a] - 1, lineData['From'][a] - 1] -= lineData['Bc/2, p.u.'][a] * 1j
 
-pd.DataFrame(Y_bus_imaginary).to_csv("YBusTest.csv")
+pd.DataFrame(Y_bus).to_csv("YBusTest.csv")
 
+# Y_g-1
+Y_g1 = np.zeros(Y_shape, np.complex128)
 
-print(Y_bus_imaginary)
+for a in range(num_busses):
+
+    # Y_gk-1 = 1 / Z_gk=1
+    if(busData['Xg1'][a] != 0):
+        Y_g1[a][a] = 1 / (busData['Xg1'][a] * 1j)
+
+# pd.DataFrame(Y_g1).to_csv("Yg1Test.csv")
+
+# Y_D
+Y_D = np.zeros(Y_shape, np.complex128)
+
+for a in range(num_busses):
+
+    # Y_Dk = S*_Dk / |V_Fk|^2
+    if(busData['Pd p.u.'][a] != 0 or busData['Qd p.u.'][a] != 0):
+        Y_D[a][a] = (busData['Pd p.u.'][a] - 1j * busData['Qd p.u.'][a]) / abs(busData['Vf'][a])**2
+
+# pd.DataFrame(Y_D).to_csv("YDTest.csv")
+
+# Y_1 = Y_bus + Y_g-1 + Y_D
+Y_1 = Y_bus + Y_g1 + Y_D
+
+# pd.DataFrame(Y_1).to_csv("Y1Test.csv")
 
 
 # Z_0 (Zero Sequence)
