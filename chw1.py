@@ -26,10 +26,45 @@ import pandas as pd
 
 # Read in excel input file
 input = pd.read_excel(data_path, sheet_name=None)
-busData = input['BusData']
-lineData = input['LineData']
-faultData = input['FaultData']
+busData = input['BusData'].dropna()
+lineData = input['LineData'].dropna()
+faultData = input['FaultData'].dropna()
+# print(busData)
+# print(lineData)
+# print(faultData)
 
-print(busData)
-print(lineData)
-print(faultData)
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# Fault Calculations
+
+# Calculate output for 3phase fault
+def calculate_3phase():
+
+    return()
+
+
+# Calculate output for SLG fault
+def calculate_slg():
+
+    return()
+
+
+# Calculate output for LL fault
+def calculate_ll():
+
+    return()
+
+
+# Calculate output for DLG fault
+def calculate_dlg():
+
+    return()
+
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# Helper Functions
+
+
+
