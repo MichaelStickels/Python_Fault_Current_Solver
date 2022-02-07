@@ -46,6 +46,25 @@ Y_shape = (busData.shape[0], busData.shape[0])
 # Y_bus_real = np.zeros(Y_shape, np.np.float64)
 Y_bus_imaginary = np.zeros(Y_shape, np.float64)
 
+for a in range(lineData.shape[0]):
+
+    # y_ii = y_ii + Y_ij
+    Y_bus_imaginary[lineData['From'][a] - 1, lineData['From'][a] - 1] += 1 / lineData['X, p.u.'][a]
+    # y_jj = y_jj + Y_ij
+    Y_bus_imaginary[lineData['To'][a] - 1, lineData['To'][a] - 1] += 1 / lineData['X, p.u.'][a]
+    # y_ij = y_ij - Y_ij
+    Y_bus_imaginary[lineData['From'][a] - 1, lineData['To'][a] - 1] -= 1 / lineData['X, p.u.'][a]
+    # y_ji = y_ji - Y_ij
+    Y_bus_imaginary[lineData['To'][a] - 1, lineData['From'][a] - 1] -= 1 / lineData['X, p.u.'][a]
+    # y_ii = y_ii + B/2_ii (shunt admittance)
+    Y_bus_imaginary[lineData['To'][a] - 1, lineData['To'][a] - 1] -= lineData['Bc/2, p.u.'][a]
+    Y_bus_imaginary[lineData['From'][a] - 1, lineData['From'][a] - 1] -= lineData['Bc/2, p.u.'][a]
+    
+
+pd.DataFrame(Y_bus_imaginary).to_csv("YBusTest.csv")
+
+
+print(Y_bus_imaginary)
 
 
 # Z_0 (Zero Sequence)
