@@ -208,4 +208,4 @@ def calculate_dlg():
 
 calculate_3phase(1, 0)
 calculate_slg(2, 0.1)
-calculate_slg(4, 0)
+calculate_ll(4, 0)
