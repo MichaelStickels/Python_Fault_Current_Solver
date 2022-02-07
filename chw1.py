@@ -114,15 +114,32 @@ for a in range(num_busses):
 # Y_2 = Y_bus + Y_g-2 + Y_D
 Y_2 = Y_bus + Y_g2 + Y_D
 
+# Ybus_0
+# since Ybus doesn't include any of the generators,
+# we can directly divide Ybus by 3 to get the line numbers
+# Z0 = 3Z1 for lines
+# Y0 = 1/3 Y1
+Ybus_0 = Y_bus / 3.
 
+# Yg_0
+Yg_0 = np.zeros(Y_shape, np.complex128)
+
+for i in range(6):
+    if busData['GenGround'][i] != 0:
+        # gen is grounded and admittance should be included
+        Yg_0[i,i] = -1j / busData['Xg0'][i]
+
+#Y_0
+# don't need to change YD becuase all the loads
+# are solidly grounded so 3Zn = 0
+Y_0 = Ybus_0 + Yg_0 + Y_D
 
 
 # Z_0 (Zero Sequence)
-# Z_0 = np.linalg.inv(Y_0)
 
+Z_0 = np.linalg.inv(Y_0)
 
-# pd.DataFrame(Z_0).to_csv("Z0Test.csv")
-
+pd.DataFrame(Z_0).to_csv("Z0Test.csv")
 
 
 # Z_1 (Positive Sequence)
@@ -171,6 +188,3 @@ def calculate_dlg():
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 # Helper Functions
-
-
-
