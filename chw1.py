@@ -44,7 +44,7 @@ num_busses = Y_shape[0]
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 # Build Z Busses (Z_0, Z_1, Z_2)
 
-# Y_Bus                                                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Calculate directly as complex?
+# Y_Bus
 Y_bus = np.zeros(Y_shape, np.complex128)
 
 for a in range(num_busses):
@@ -162,19 +162,34 @@ pd.DataFrame(Z_2).to_csv("Z2Test.csv")
 # Fault Calculations
 
 # Calculate output for 3phase fault
-def calculate_3phase():
+def calculate_3phase(bus, Z_F):
+
+    # I_F = V_F / (Z_nn-1 + Z_F)
+    I_F = busData['Vf'][bus - 1] / (Z_1[bus - 1][bus - 1] + Z_F)
+
+    print("3ph: I_F = ", abs(I_F))
 
     return()
 
 
 # Calculate output for SLG fault
-def calculate_slg():
+def calculate_slg(bus, Z_F):
+
+    # I_F = 3 * V_F / (Z_nn-0 + Z_nn-1 + Z_nn-2 + 3Z_F)
+    I_F = 3 * busData['Vf'][bus - 1] / (Z_0[bus - 1][bus - 1] + Z_1[bus - 1][bus - 1] + Z_2[bus - 1][bus - 1] + 3 * Z_F)
+
+    print("SLG: I_F = ", abs(I_F))
 
     return()
 
 
 # Calculate output for LL fault
-def calculate_ll():
+def calculate_ll(bus, Z_F):
+
+    # I_F = -j * sqrt(3) * V_F / (Z_nn-1 + Z_nn-2 + Z_F)
+    I_F = -1j * np.sqrt(3) * busData['Vf'][bus - 1] / (Z_1[bus - 1][bus - 1] + Z_2[bus - 1][bus - 1] + Z_F)
+
+    print("LL: I_F = ", abs(I_F))
 
     return()
 
@@ -188,3 +203,9 @@ def calculate_dlg():
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 # Helper Functions
+
+
+
+calculate_3phase(1, 0)
+calculate_slg(2, 0.1)
+calculate_slg(4, 0)
