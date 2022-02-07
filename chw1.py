@@ -63,6 +63,8 @@ for a in range(num_busses):
 
 pd.DataFrame(Y_bus).to_csv("YBusTest.csv")
 
+
+
 # Y_g-1
 Y_g1 = np.zeros(Y_shape, np.complex128)
 
@@ -73,6 +75,8 @@ for a in range(num_busses):
         Y_g1[a][a] = 1 / (busData['Xg1'][a] * 1j)
 
 # pd.DataFrame(Y_g1).to_csv("Yg1Test.csv")
+
+
 
 # Y_D
 Y_D = np.zeros(Y_shape, np.complex128)
@@ -85,20 +89,35 @@ for a in range(num_busses):
 
 # pd.DataFrame(Y_D).to_csv("YDTest.csv")
 
+
+
 # Y_1 = Y_bus + Y_g-1 + Y_D
 Y_1 = Y_bus + Y_g1 + Y_D
 
 # pd.DataFrame(Y_1).to_csv("Y1Test.csv")
 
 
+
 # Z_0 (Zero Sequence)
+# Z_0 = np.linalg.inv(Y_0)
+
+
+# pd.DataFrame(Z_0).to_csv("Z0Test.csv")
+
 
 
 # Z_1 (Positive Sequence)
+Z_1 = np.linalg.inv(Y_1)
+
+pd.DataFrame(Z_1).to_csv("Z1Test.csv")
+
 
 
 # Z_2 (Negative Sequence)
+# Z_2 = np.linalg.inv(Y_2)
 
+
+# pd.DataFrame(Z_2).to_csv("Z2Test.csv")
 
 
 
