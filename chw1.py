@@ -34,6 +34,32 @@ faultData = input['FaultData'].dropna()
 # print(faultData)
 
 
+# Calculate parameters
+Y_shape = (busData.shape[0], busData.shape[0])
+
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# Build Z Busses (Z_0, Z_1, Z_2)
+
+# Y_Bus
+# Y_bus_real = np.zeros(Y_shape, np.np.float64)
+Y_bus_imaginary = np.zeros(Y_shape, np.float64)
+
+
+
+# Z_0 (Zero Sequence)
+
+
+# Z_1 (Positive Sequence)
+
+
+# Z_2 (Negative Sequence)
+
+
+
+
+
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 # Fault Calculations
