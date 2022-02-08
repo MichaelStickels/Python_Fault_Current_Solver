@@ -20,6 +20,8 @@ data_path = "data/CHW1Data.xlsx"
 # Imports
 import numpy as np
 import pandas as pd
+import cmath
+import math
 
 
 
@@ -34,6 +36,12 @@ faultData = input['FaultData'].dropna()
 # Calculate parameters
 Y_shape = (busData.shape[0], busData.shape[0])
 num_busses = Y_shape[0]
+
+
+
+a = cmath.rect(1, 120 * math.pi / 180)
+a2 = cmath.rect(1, -120 * math.pi / 180)
+a_identity = np.matrix([[1, 1, 1],[1, a2, a],[1, a, a2]])
 
 
 
@@ -163,14 +171,47 @@ def iterateFaults(faults):
         type = faults['Type'][a]
 
         if (type == '3Ph'):
-            print('3Ph')
+
+            print('Fault', a + 1)
+            print('Type: 3ph')
+            print('Bus:', faults['Fault Bus'][a])
+            print('Result Bus:', faults['Results Bus'][a])
+            print('Z_F:', faults['Zf'][a])
+            calculate_3phase(faults['Fault Bus'][a], faults['Results Bus'][a], faults['Zf'][a])
+            print()
+
         elif (type == 'SLG'):
-            print('SLG')
+
+            print('Fault', a + 1)
+            print('Type: SLG')
+            print('Bus:', faults['Fault Bus'][a])
+            print('Result Bus:', faults['Results Bus'][a])
+            print('Z_F:', faults['Zf'][a])
+            calculate_slg(faults['Fault Bus'][a], faults['Results Bus'][a], faults['Zf'][a])
+            print()
+
         elif (type == 'LL'):
-            print('LL')
+
+            print('Fault', a + 1)
+            print('Type: LL')
+            print('Bus:', faults['Fault Bus'][a])
+            print('Result Bus:', faults['Results Bus'][a])
+            print('Z_F:', faults['Zf'][a])
+            calculate_ll(faults['Fault Bus'][a], faults['Results Bus'][a], faults['Zf'][a])
+            print()
+
         elif (type == 'DLG'):
-            print('DLG')
+
+            print('Fault', a + 1)
+            print('Type: DLG')
+            print('Bus:', faults['Fault Bus'][a])
+            print('Result Bus:', faults['Results Bus'][a])
+            print('Z_F:', faults['Zf'][a])
+            calculate_dlg(faults['Fault Bus'][a], faults['Results Bus'][a], faults['Zf'][a])
+            print()
+
         else:
+
             print('fault code error')
 
     return()
@@ -181,40 +222,59 @@ def iterateFaults(faults):
 # Fault Calculations
 
 # Calculate output for 3phase fault
-def calculate_3phase(bus, Z_F):
+def calculate_3phase(bus, resultBus, Z_F):
 
     # I_F = V_F / (Z_nn-1 + Z_F)
     I_F = busData['Vf'][bus - 1] / (Z_1[bus - 1][bus - 1] + Z_F)
 
-    print("3ph: I_F = ", abs(I_F))
+    print("I_F = ", abs(I_F))
 
     return()
 
 
 # Calculate output for SLG fault
-def calculate_slg(bus, Z_F):
+def calculate_slg(bus, resultBus, Z_F):
 
     # I_F = 3 * V_F / (Z_nn-0 + Z_nn-1 + Z_nn-2 + 3Z_F)
     I_F = 3 * busData['Vf'][bus - 1] / (Z_0[bus - 1][bus - 1] + Z_1[bus - 1][bus - 1] + Z_2[bus - 1][bus - 1] + 3 * Z_F)
 
-    print("SLG: I_F = ", abs(I_F))
+    print("I_F = ", abs(I_F))
 
     return()
 
 
 # Calculate output for LL fault
-def calculate_ll(bus, Z_F):
+def calculate_ll(bus, resultBus, Z_F):
 
     # I_F = -j * sqrt(3) * V_F / (Z_nn-1 + Z_nn-2 + Z_F)
     I_F = -1j * np.sqrt(3) * busData['Vf'][bus - 1] / (Z_1[bus - 1][bus - 1] + Z_2[bus - 1][bus - 1] + Z_F)
 
-    print("LL: I_F = ", abs(I_F))
+    print("I_F = ", abs(I_F))
 
     return()
 
 
 # Calculate output for DLG fault
-def calculate_dlg():
+def calculate_dlg(bus, resultBus, Z_F):
+
+    Z_nn0 = Z_0[bus - 1][bus - 1]
+    Z_nn1 = Z_1[bus - 1][bus - 1]
+    Z_nn2 = Z_2[bus - 1][bus - 1]
+    V_F = busData['Vf'][bus - 1]
+
+
+    I_n1 = V_F / (Z_nn1 + (Z_nn2 * (Z_nn0 + 3 * Z_F)) / (Z_nn2 + Z_nn0 + 3 * Z_F))
+    I_n2 = -I_n1 * (Z_nn0 + 3 * Z_F) / (Z_nn2 + Z_nn0 + 3 * Z_F)
+    I_n0 = -I_n1 * (Z_nn2) / (Z_nn2 + Z_nn0 + 3 * Z_F)
+
+    I_s = np.matrix([[I_n0],[I_n1],[I_n2]])
+    I_phase = np.matmul(a_identity, I_s)
+
+    print('I_a = ', cmath.polar(I_phase[0]))
+    print('I_b = ', cmath.polar(I_phase[1]))
+    print('I_c = ', cmath.polar(I_phase[2]))
+
+
 
     return()
 
@@ -225,6 +285,11 @@ def calculate_dlg():
 
 
 
-calculate_3phase(1, 0)
-calculate_slg(2, 0.1)
-calculate_ll(4, 0)
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# Run
+
+print("Fault Current Solver")
+print("")
+
+iterateFaults(faultData)
+
