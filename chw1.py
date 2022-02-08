@@ -13,9 +13,8 @@
 
 
 
-# Parameters and Constants
+# Set Parameters and Constants
 data_path = "data/CHW1Data.xlsx"
-
 
 
 # Imports
@@ -29,22 +28,19 @@ input = pd.read_excel(data_path, sheet_name=None)
 busData = input['BusData'].dropna()
 lineData = input['LineData'].dropna()
 faultData = input['FaultData'].dropna()
-# print(busData)
-# print(lineData)
-# print(faultData)
+
 
 
 # Calculate parameters
 Y_shape = (busData.shape[0], busData.shape[0])
-
 num_busses = Y_shape[0]
 
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-# Build Z Busses (Z_0, Z_1, Z_2)
+# Build Z Matrices [Z_0], [Z_1], and [Z_2]
 
-# Y_Bus
+# Y_Bus                                                   #### Ignores resistance (unimplemented)
 Y_bus = np.zeros(Y_shape, np.complex128)
 
 for a in range(num_busses):
@@ -60,8 +56,7 @@ for a in range(num_busses):
     # y_ii = y_ii + B/2_ii (shunt admittance)
     Y_bus[lineData['To'][a] - 1, lineData['To'][a] - 1] -= lineData['Bc/2, p.u.'][a] * 1j
     Y_bus[lineData['From'][a] - 1, lineData['From'][a] - 1] -= lineData['Bc/2, p.u.'][a] * 1j
-
-pd.DataFrame(Y_bus).to_csv("YBusTest.csv")
+# pd.DataFrame(Y_bus).to_csv("YBusTest.csv")
 
 
 
@@ -73,7 +68,6 @@ for a in range(num_busses):
     # Y_gk-1 = 1 / Z_gk-1
     if(busData['Xg1'][a] != 0):
         Y_g1[a][a] = 1 / (busData['Xg1'][a] * 1j)
-
 # pd.DataFrame(Y_g1).to_csv("Yg1Test.csv")
 
 
@@ -86,14 +80,12 @@ for a in range(num_busses):
     # Y_Dk = S*_Dk / |V_Fk|^2
     if(busData['Pd p.u.'][a] != 0 or busData['Qd p.u.'][a] != 0):
         Y_D[a][a] = (busData['Pd p.u.'][a] - 1j * busData['Qd p.u.'][a]) / abs(busData['Vf'][a])**2
-
 # pd.DataFrame(Y_D).to_csv("YDTest.csv")
 
 
 
 # Y_1 = Y_bus + Y_g-1 + Y_D
 Y_1 = Y_bus + Y_g1 + Y_D
-
 # pd.DataFrame(Y_1).to_csv("Y1Test.csv")
 
 
@@ -106,14 +98,17 @@ for a in range(num_busses):
     # Y_gk-2 = 1 / Z_gk-2
     if(busData['Xg2'][a] != 0):
         Y_g2[a][a] = 1 / (busData['Xg2'][a] * 1j)
-
 # pd.DataFrame(Y_g2).to_csv("Yg2Test.csv")
 
 
 
 # Y_2 = Y_bus + Y_g-2 + Y_D
 Y_2 = Y_bus + Y_g2 + Y_D
+# pd.DataFrame(Y_2).to_csv("Y2Test.csv")
 
+
+# Building [Z_0]
+#
 # Y_bus_0
 Y_bus0 = np.zeros(Y_shape, np.complex128)
 
@@ -137,26 +132,48 @@ for a in range(num_busses):
 
 Y_0 = Y_bus0 + Y_D
 
+
+
+# Inverting [Y_s] for [Z_s]
+#
 # Z_0 (Zero Sequence)
-
 Z_0 = np.linalg.inv(Y_0)
-
 pd.DataFrame(Z_0).to_csv("Z0Test.csv")
 
 
 # Z_1 (Positive Sequence)
 Z_1 = np.linalg.inv(Y_1)
-
 pd.DataFrame(Z_1).to_csv("Z1Test.csv")
 
 
 
 # Z_2 (Negative Sequence)
 Z_2 = np.linalg.inv(Y_2)
-
 pd.DataFrame(Z_2).to_csv("Z2Test.csv")
 
 
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# Itereate Faults (from data)
+
+def iterateFaults(faults):
+
+    for a in range(faults.shape[0]):
+
+        type = faults['Type'][a]
+
+        if (type == '3Ph'):
+            print('3Ph')
+        elif (type == 'SLG'):
+            print('SLG')
+        elif (type == 'LL'):
+            print('LL')
+        elif (type == 'DLG'):
+            print('DLG')
+        else:
+            print('fault code error')
+
+    return()
 
 
 
