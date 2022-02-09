@@ -43,7 +43,7 @@ a = cmath.rect(1, 120 * math.pi / 180)
 a2 = cmath.rect(1, -120 * math.pi / 180)
 a_identity = np.matrix([[1, 1, 1],[1, a2, a],[1, a, a2]])
 
-
+A = np.array([[1, 1, 1],[1, a2, a],[1, a, a2]])
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 # Build Z Matrices [Z_0], [Z_1], and [Z_2]
@@ -159,9 +159,6 @@ Z_1 = np.linalg.inv(Y_1)
 Z_2 = np.linalg.inv(Y_2)
 # pd.DataFrame(Z_2).to_csv("Z2Test.csv")
 
-# fix later to correct value of a
-a = 1
-A = np.array([[1,1,1], [1, a**2, a], [1, a, a**2]])
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 # Itereate Faults (from data)
@@ -235,10 +232,10 @@ def calculate_3phase(bus, resultBus, Z_F):
 
     V_F = busData['Vf'][resultBus - 1]
 
-    # E from faulted bus to fault
+    # E from result bus to fault
     Ef_0 = 0 # -- I0 = 0
-    Ef_1= V_F - I_F * Z_1[bus - 1, bus - 1] # -- If = I1
-    print('!!!!! ', V_F, I_F * Z_1[bus - 1, bus - 1])
+    Ef_1= V_F - I_F * Z_1[resultBus - 1, bus - 1] # -- If = I1
+    print('!!!!! ', V_F, I_F * Z_1[resultBus - 1, bus - 1])
     Ef_2 = 0 # -- I2 = 0
 
     # need to find current through every LINE connection to fault bus
@@ -259,13 +256,14 @@ def calculate_3phase(bus, resultBus, Z_F):
             i_to -= 1
             # calculate E for To bus
             Ef_0_to = 0 # -- I0 = 0
-            Ef_1_to = busData['Vf'][i_to] - I_F * Z_1[i_to, resultBus - 1] # -- If = I1
+            Ef_1_to = busData['Vf'][i_to] - I_F * Z_1[i_to, bus - 1] # -- If = I1
             Ef_2_to = 0 # -- I2 = 0
 
             # calculte I through each connection
-            I0_to = (Ef_0 - Ef_0_to) / Z_0[i_to, resultBus - 1]
-            I1_to = (Ef_1 - Ef_1_to) / Z_1[i_to, resultBus - 1] # -- does Z1 have to be multiplied by -1?
-            I2_to = (Ef_2 - Ef_2_to) / Z_2[i_to, resultBus - 1]
+            I0_to = (Ef_0 - Ef_0_to) / Z_0[i_to, bus - 1]
+            I1_to = (Ef_1 - Ef_1_to) / Z_1[i_to, bus - 1] # -- does Z1 have to be multiplied by -1?
+            I2_to = (Ef_2 - Ef_2_to) / Z_2[i_to, bus - 1]
+
             seq = np.array([I0_to, I1_to, I2_to])
             Ia, Ib, Ic = A @ seq.T
 
@@ -273,12 +271,12 @@ def calculate_3phase(bus, resultBus, Z_F):
             res['Ib'].append(Ib)
             res['Ic'].append(Ic)
 
-    # fault connection between fault and GENERATOR
+    # fault connection between result bus and GENERATOR
     if Y_g1[resultBus - 1, resultBus - 1] != 0:
         res['Fault'].append(resultBus)
 
         # generator connected to fault bus
-        res['To'].append(-1) # -- 0 means connected to generator (might work out later)
+        res['To'].append('gen')
 
         Ef_0_to = 0 # no source (terminals = 0)
         Ef_1_to = busData['Vf'][resultBus - 1] # source, terminals != 0
@@ -316,9 +314,9 @@ def calculate_slg(bus, resultBus, Z_F):
     V_F = busData['Vf'][resultBus - 1]
     I_1 = I_F / 3
     # E from faulted bus to fault
-    Ef_0 = - I_1 * Z_0[bus - 1, bus - 1] # -- I0 = I1
-    Ef_1 = V_F - I_1 * Z_1[bus - 1, bus - 1] # -- If = I1
-    Ef_2 = - I_1 * Z_2[bus - 1, bus - 1] # -- I2 = I1
+    Ef_0 = - I_1 * Z_0[resultBus - 1, bus - 1] # -- I0 = I1
+    Ef_1 = V_F - I_1 * Z_1[resultBus - 1, bus - 1] # -- If = I1
+    Ef_2 = - I_1 * Z_2[resultBus - 1, bus - 1] # -- I2 = I1
 
     for i in range(lineData['From'].shape[0]):
 
@@ -336,14 +334,14 @@ def calculate_slg(bus, resultBus, Z_F):
             # adjust for zero-based indexing in python
             i_to -= 1
             # calculate E for To bus
-            Ef_0_to = - I_1 * Z_0[i_to, resultBus - 1] # -- I0 = I1
-            Ef_1_to = busData['Vf'][i_to] - I_1 * Z_1[i_to, resultBus - 1] # -- I1 = If
-            Ef_2_to = - I_1 * Z_2[i_to, resultBus - 1] # -- I2 = I1
+            Ef_0_to = - I_1 * Z_0[i_to, bus - 1] # -- I0 = I1
+            Ef_1_to = busData['Vf'][i_to] - I_1 * Z_1[i_to, bus - 1] # -- I1 = If
+            Ef_2_to = - I_1 * Z_2[i_to, bus - 1] # -- I2 = I1
 
             # calculte I through each connection
-            I0_to = (Ef_0 - Ef_0_to) / Z_0[i_to, resultBus - 1]
-            I1_to = (Ef_1 - Ef_1_to) / Z_1[i_to, resultBus - 1] # -- does Z1 have to be multiplied by -1?
-            I2_to = (Ef_2 - Ef_2_to) / Z_2[i_to, resultBus - 1]
+            I0_to = (Ef_0 - Ef_0_to) / Z_0[i_to, bus - 1]
+            I1_to = (Ef_1 - Ef_1_to) / Z_1[i_to, bus - 1] # -- does Z1 have to be multiplied by -1?
+            I2_to = (Ef_2 - Ef_2_to) / Z_2[i_to, bus - 1]
             seq = np.array([I0_to, I1_to, I2_to])
             Ia, Ib, Ic = A @ seq.T
 
@@ -395,8 +393,8 @@ def calculate_ll(bus, resultBus, Z_F):
     I_1 = 1j * I_F / np.sqrt(3)
     # E from faulted bus to fault
     Ef_0 = 0 # -- I0 = 0
-    Ef_1 = V_F - I_1 * Z_1[bus - 1, bus - 1] # -- If = I1
-    Ef_2 =  - I_1 * Z_2[bus - 1, bus - 1] # -- I2 = -I1
+    Ef_1 = V_F - I_1 * Z_1[resultBus - 1, bus - 1] # -- If = I1
+    Ef_2 =  - I_1 * Z_2[resultBus - 1, bus - 1] # -- I2 = -I1
 
     for i in range(lineData['From'].shape[0]):
 
@@ -415,13 +413,13 @@ def calculate_ll(bus, resultBus, Z_F):
             i_to -= 1
             # calculate E for To bus
             Ef_0_to = 0 # -- I0 = 0
-            Ef_1_to = busData['Vf'][i_to] - I_1 * Z_1[i_to, resultBus - 1] # -- I1 = If
-            Ef_2_to = I_1 * Z_2[i_to, resultBus - 1] # -- I2 = -I1
+            Ef_1_to = busData['Vf'][i_to] - I_1 * Z_1[i_to, bus - 1] # -- I1 = If
+            Ef_2_to = I_1 * Z_2[i_to, bus - 1] # -- I2 = -I1
 
             # calculte I through each connection
-            I0_to = (Ef_0 - Ef_0_to) / Z_0[i_to, resultBus - 1]
-            I1_to = (Ef_1 - Ef_1_to) / Z_1[i_to, resultBus - 1] # -- does Z1 have to be multiplied by -1?
-            I2_to = (Ef_2 - Ef_2_to) / Z_2[i_to, resultBus - 1]
+            I0_to = (Ef_0 - Ef_0_to) / Z_0[i_to, bus - 1]
+            I1_to = (Ef_1 - Ef_1_to) / Z_1[i_to, bus - 1] # -- does Z1 have to be multiplied by -1?
+            I2_to = (Ef_2 - Ef_2_to) / Z_2[i_to, bus - 1]
             seq = np.array([I0_to, I1_to, I2_to])
             Ia, Ib, Ic = A @ seq.T
 
@@ -474,9 +472,9 @@ def calculate_dlg(bus, resultBus, Z_F):
     I_s = np.matrix([[I_n0],[I_n1],[I_n2]])
     I_phase = np.matmul(a_identity, I_s)
 
-    Ef_0 = - I_n0 * Z_nn0 # -- I0 = 0
-    Ef_1 = V_F - - I_n1 * Z_nn1 # -- If = I1
-    Ef_2 =  - I_n2 * Z_nn2 # -- I2 = -I1
+    Ef_0 = - I_n0 * Z_0[resultBus - 1, bus - 1] # -- I0 = 0
+    Ef_1 = V_F - - I_n1 * Z_1[resultBus - 1, bus - 1] # -- If = I1
+    Ef_2 =  - I_n2 * Z_2[resultBus - 1, bus - 1] # -- I2 = -I1
 
     for i in range(lineData['From'].shape[0]):
 
@@ -494,14 +492,14 @@ def calculate_dlg(bus, resultBus, Z_F):
             # adjust for zero-based indexing in python
             i_to -= 1
             # calculate E for To bus
-            Ef_0_to = - I_n0 * Z_0[i_to, resultBus - 1] # -- I0 = 0
-            Ef_1_to = busData['Vf'][i_to] - I_n1 * Z_1[i_to, resultBus - 1] # -- I1 = If
-            Ef_2_to = - I_n2 * Z_2[i_to, resultBus - 1] # -- I2 = -I1
+            Ef_0_to = - I_n0 * Z_0[i_to, bus - 1] # -- I0 = 0
+            Ef_1_to = busData['Vf'][i_to] - I_n1 * Z_1[i_to, bus - 1] # -- I1 = If
+            Ef_2_to = - I_n2 * Z_2[i_to, bus - 1] # -- I2 = -I1
 
             # calculte I through each connection
-            I0_to = (Ef_0 - Ef_0_to) / Z_0[i_to, resultBus - 1]
-            I1_to = (Ef_1 - Ef_1_to) / Z_1[i_to, resultBus - 1] # -- does Z1 have to be multiplied by -1?
-            I2_to = (Ef_2 - Ef_2_to) / Z_2[i_to, resultBus - 1]
+            I0_to = (Ef_0 - Ef_0_to) / Z_0[i_to, bus - 1]
+            I1_to = (Ef_1 - Ef_1_to) / Z_1[i_to, bus - 1] # -- does Z1 have to be multiplied by -1?
+            I2_to = (Ef_2 - Ef_2_to) / Z_2[i_to, bus - 1]
             seq = np.array([I0_to, I1_to, I2_to])
             Ia, Ib, Ic = A @ seq.T
 
@@ -521,9 +519,9 @@ def calculate_dlg(bus, resultBus, Z_F):
         Ef_2_to = 0 # no source (terminals = 0)
 
         # calculte I through each connection
-        I0_to = (Ef_0 - Ef_0_to) / Z_0[i_to, resultBus - 1]
-        I1_to = (Ef_1 - Ef_1_to) / Z_1[i_to, resultBus - 1] # -- does Z1 have to be multiplied by -1?
-        I2_to = (Ef_2 - Ef_2_to) / Z_2[i_to, resultBus - 1]
+        I0_to = (Ef_0 - Ef_0_to) / Z_0[i_to, bus - 1]
+        I1_to = (Ef_1 - Ef_1_to) / Z_1[i_to, bus - 1] # -- does Z1 have to be multiplied by -1?
+        I2_to = (Ef_2 - Ef_2_to) / Z_2[i_to, bus - 1]
 
         seq = np.array([I0_to, I1_to, I2_to])
         Ia, Ib, Ic = A @ seq.T
