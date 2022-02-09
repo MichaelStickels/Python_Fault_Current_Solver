@@ -160,7 +160,7 @@ Z_2 = np.linalg.inv(Y_2)
 # pd.DataFrame(Z_2).to_csv("Z2Test.csv")
 
 # fix later to correct value of a
-a = 1j
+a = 1
 A = np.array([[1,1,1], [1, a**2, a], [1, a, a**2]])
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
@@ -223,53 +223,87 @@ def iterateFaults(faults):
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 # Fault Calculations
 
+# calculate results bus info
+res = {'Fault': [], 'To': [], 'Ia': [], 'Ib': [], 'Ic': []}
+
 # Calculate output for 3phase fault
 def calculate_3phase(bus, resultBus, Z_F):
 
     # I_F = V_F / (Z_nn-1 + Z_F)
     I_F = busData['Vf'][bus - 1] / (Z_1[bus - 1][bus - 1] + Z_F)
 
-    # calculate results bus info
-    res = pd.DataFrame()
-    res['Fault bus'] = [bus, bus, bus]
 
-    V_F = busData['Vf'][bus - 1]
+    V_F = busData['Vf'][resultBus - 1]
 
     # E from faulted bus to fault
     Ef_0 = 0 # -- I0 = 0
-    Ef_1= V_F - I_F * Z_F # -- If = I1
+    Ef_1= V_F - I_F * Z_1[bus - 1, bus - 1] # -- If = I1
+    print('!!!!! ', V_F, I_F * Z_1[bus - 1, bus - 1])
     Ef_2 = 0 # -- I2 = 0
-    # need to find current through every connection to fault bus
-    for i in range(lineData['From'].shape):
-        if lineData['From'][i] == (bus - 1):
+
+    # need to find current through every LINE connection to fault bus
+    for i in range(lineData['From'].shape[0]):
+
+        if lineData['From'][i] == resultBus or lineData['To'][i] == resultBus:
+            res['Fault'].append(resultBus)
+            print('    res bus', resultBus)
+
             # LINE connected to fault bus
-            i_to = lineData['To'][i]
-            res['To'].append(i_To)
+            if lineData['From'][i] == resultBus:
+                i_to = lineData['To'][i]
+            else:
+                i_to = lineData['From'][i]
+            print('    i_to', i_to)
+            res['To'].append(i_to)
             # adjust for zero-based indexing in python
             i_to -= 1
             # calculate E for To bus
-            Ef0_to = 0 # -- I0 = 0
-            Ef_1_to = busData['Vf'][i_to] - I_F * Z1[i_to, bus - 1] # -- If = I1
+            Ef_0_to = 0 # -- I0 = 0
+            Ef_1_to = busData['Vf'][i_to] - I_F * Z_1[i_to, resultBus - 1] # -- If = I1
             Ef_2_to = 0 # -- I2 = 0
 
             # calculte I through each connection
-            I0_to = (Ef_0 - Ef0_to) / Z1[i_to, bus - 1]
-            I1_to = (Ef_1 - Ef_1_to) / Z1[i_to, bus - 1] # -- does Z1 have to be multiplied by -1?
-            I2_to = (Ef_2 - Ef_2_to) / Z1[i_to, bus - 1]
+            I0_to = (Ef_0 - Ef_0_to) / Z_0[i_to, resultBus - 1]
+            I1_to = (Ef_1 - Ef_1_to) / Z_1[i_to, resultBus - 1] # -- does Z1 have to be multiplied by -1?
+            I2_to = (Ef_2 - Ef_2_to) / Z_2[i_to, resultBus - 1]
             seq = np.array([I0_to, I1_to, I2_to])
-            phase = A @ seq.T
+            Ia, Ib, Ic = A @ seq.T
 
-            res['Ia'] = phase[0]
-            res['Ib'] = phase[1]
-            res['Ic'] = phase[2]
+            res['Ia'].append(Ia)
+            res['Ib'].append(Ib)
+            res['Ic'].append(Ic)
 
-        elif busData['Pd p.u.'][bus - 1] != 0:
-            # generator connected to fault bus
-            res['To'].append(0) # -- 0 means connected to generator (might work out later)
-            
+    # fault connection between fault and GENERATOR
+    if Y_g1[resultBus - 1, resultBus - 1] != 0:
+        res['Fault'].append(resultBus)
+
+        # generator connected to fault bus
+        res['To'].append(-1) # -- 0 means connected to generator (might work out later)
+
+        Ef_0_to = 0 # no source (terminals = 0)
+        Ef_1_to = busData['Vf'][resultBus - 1] # source, terminals != 0
+        Ef_2_to = 0 # no source (terminals = 0)
+
+        # calculte I through each connection
+        if busData['GenGround'][resultBus] == 1:
+            I0_to = (Ef_0 - Ef_0_to) / (1j * busData['Xg0'][resultBus - 1])
+        else:
+            I0_to = 0
+        I1_to = (Ef_1 - Ef_1_to) / (1j * busData['Xg1'][resultBus - 1])
+        print('    I1 to -- ', I1_to, 'Ef_1 -- ', Ef_1, 'Ef_1_to -- ', Ef_1_to)
+        I2_to = (Ef_2 - Ef_2_to) / (1j * busData['Xg2'][resultBus - 1])
+        seq = np.array([I0_to, I1_to, I2_to])
+        Ia, Ib, Ic = A @ seq.T
+
+        res['Ia'].append(Ia)
+        res['Ib'].append(Ib)
+        res['Ic'].append(Ic)
+
+
 
     print("I_F = ", abs(I_F))
 
+    print('res', res)
     return()
 
 
@@ -279,8 +313,74 @@ def calculate_slg(bus, resultBus, Z_F):
     # I_F = 3 * V_F / (Z_nn-0 + Z_nn-1 + Z_nn-2 + 3Z_F)
     I_F = 3 * busData['Vf'][bus - 1] / (Z_0[bus - 1][bus - 1] + Z_1[bus - 1][bus - 1] + Z_2[bus - 1][bus - 1] + 3 * Z_F)
 
-    print("I_F = ", abs(I_F))
+    V_F = busData['Vf'][resultBus - 1]
+    I1 = I_F / 3
+    # E from faulted bus to fault
+    Ef_0 = - I_1 * Z_0[bus - 1, bus - 1] # -- I0 = I1
+    Ef_1 = V_F - I_1 * Z_1[bus - 1, bus - 1] # -- If = I1
+    Ef_2 = - I_1 * Z_2[bus - 1, bus - 1] # -- I2 = I1
 
+    for i in range(lineData['From'].shape[0]):
+
+        if lineData['From'][i] == resultBus or lineData['To'][i] == resultBus:
+            res['Fault'].append(resultBus)
+            print('    res bus', resultBus)
+
+            # LINE connected to fault bus
+            if lineData['From'][i] == resultBus:
+                i_to = lineData['To'][i]
+            else:
+                i_to = lineData['From'][i]
+            print('    i_to', i_to)
+            res['To'].append(i_to)
+            # adjust for zero-based indexing in python
+            i_to -= 1
+            # calculate E for To bus
+            Ef_0_to = busData['Vf'][i_to] - I_1 * Z_0[i_to, resultBus - 1] # -- I0 = I1
+            Ef_1_to = busData['Vf'][i_to] - I_1 * Z_1[i_to, resultBus - 1] # -- I1 = If
+            Ef_2_to = busData['Vf'][i_to] - I_1 * Z_2[i_to, resultBus - 1] # -- I2 = I1
+
+            # calculte I through each connection
+            I0_to = (Ef_0 - Ef_0_to) / Z_0[i_to, resultBus - 1]
+            I1_to = (Ef_1 - Ef_1_to) / Z_1[i_to, resultBus - 1] # -- does Z1 have to be multiplied by -1?
+            I2_to = (Ef_2 - Ef_2_to) / Z_2[i_to, resultBus - 1]
+            seq = np.array([I0_to, I1_to, I2_to])
+            Ia, Ib, Ic = A @ seq.T
+
+            res['Ia'].append(Ia)
+            res['Ib'].append(Ib)
+            res['Ic'].append(Ic)
+
+    # fault connection between fault and GENERATOR
+    if Y_g1[resultBus - 1, resultBus - 1] != 0:
+        res['Fault'].append(resultBus)
+
+        # generator connected to fault bus
+        res['To'].append(-1) # -- 0 means connected to generator (might work out later)
+
+        Ef_0_to = 0 # no source (terminals = 0)
+        Ef_1_to = busData['Vf'][resultBus - 1] # source, terminals != 0
+        Ef_2_to = 0 # no source (terminals = 0)
+
+        # calculte I through each connection
+        if busData['GenGround'][resultBus] == 1:
+            I0_to = (Ef_0 - Ef_0_to) / (1j * busData['Xg0'][resultBus - 1])
+        else:
+            I0_to = 0
+        I1_to = (Ef_1 - Ef_1_to) / (1j * busData['Xg1'][resultBus - 1])
+        print('    I1 to -- ', I1_to, 'Ef_1 -- ', Ef_1, 'Ef_1_to -- ', Ef_1_to)
+        I2_to = (Ef_2 - Ef_2_to) / (1j * busData['Xg2'][resultBus - 1])
+
+        seq = np.array([I0_to, I1_to, I2_to])
+        Ia, Ib, Ic = A @ seq.T
+
+        res['Ia'].append(Ia)
+        res['Ib'].append(Ib)
+        res['Ic'].append(Ic)
+
+
+    print("I_F = ", abs(I_F))
+    print(res)
     return()
 
 
@@ -289,6 +389,72 @@ def calculate_ll(bus, resultBus, Z_F):
 
     # I_F = -j * sqrt(3) * V_F / (Z_nn-1 + Z_nn-2 + Z_F)
     I_F = -1j * np.sqrt(3) * busData['Vf'][bus - 1] / (Z_1[bus - 1][bus - 1] + Z_2[bus - 1][bus - 1] + Z_F)
+
+
+    V_F = busData['Vf'][resultBus - 1]
+    I1 = 1j * I_F / np.sqrt(3)
+    # E from faulted bus to fault
+    Ef_0 = 0 # -- I0 = 0
+    Ef_1 = V_F - I_1 * Z_1[bus - 1, bus - 1] # -- If = I1
+    Ef_2 =  - I_1 * Z_2[bus - 1, bus - 1] # -- I2 = -I1
+
+    for i in range(lineData['From'].shape[0]):
+
+        if lineData['From'][i] == resultBus or lineData['To'][i] == resultBus:
+            res['Fault'].append(resultBus)
+            print('    res bus', resultBus)
+
+            # LINE connected to fault bus
+            if lineData['From'][i] == resultBus:
+                i_to = lineData['To'][i]
+            else:
+                i_to = lineData['From'][i]
+            print('    i_to', i_to)
+            res['To'].append(i_to)
+            # adjust for zero-based indexing in python
+            i_to -= 1
+            # calculate E for To bus
+            Ef_0_to = busData['Vf'][i_to] - I_F * Z_0[i_to, resultBus - 1] # -- I0 = I1
+            Ef_1_to = busData['Vf'][i_to] - I_1 * Z_1[i_to, resultBus - 1] # -- I1 = If
+            Ef_2_to = busData['Vf'][i_to] - I_F * Z_2[i_to, resultBus - 1] # -- I2 = I1
+
+            # calculte I through each connection
+            I0_to = (Ef_0 - Ef_0_to) / Z_0[i_to, resultBus - 1]
+            I1_to = (Ef_1 - Ef_1_to) / Z_1[i_to, resultBus - 1] # -- does Z1 have to be multiplied by -1?
+            I2_to = (Ef_2 - Ef_2_to) / Z_2[i_to, resultBus - 1]
+            seq = np.array([I0_to, I1_to, I2_to])
+            Ia, Ib, Ic = A @ seq.T
+
+            res['Ia'].append(Ia)
+            res['Ib'].append(Ib)
+            res['Ic'].append(Ic)
+
+    # fault connection between fault and GENERATOR
+    if Y_g1[resultBus - 1, resultBus - 1] != 0:
+        res['Fault'].append(resultBus)
+
+        # generator connected to fault bus
+        res['To'].append(-1) # -- 0 means connected to generator (might work out later)
+
+        Ef_0_to = 0 # no source (terminals = 0)
+        Ef_1_to = busData['Vf'][resultBus - 1] # source, terminals != 0
+        Ef_2_to = 0 # no source (terminals = 0)
+
+        # calculte I through each connection
+        if busData['GenGround'][resultBus] == 1:
+            I0_to = (Ef_0 - Ef_0_to) / (1j * busData['Xg0'][resultBus - 1])
+        else:
+            I0_to = 0
+        I1_to = (Ef_1 - Ef_1_to) / (1j * busData['Xg1'][resultBus - 1])
+        print('    I1 to -- ', I1_to, 'Ef_1 -- ', Ef_1, 'Ef_1_to -- ', Ef_1_to)
+        I2_to = (Ef_2 - Ef_2_to) / (1j * busData['Xg2'][resultBus - 1])
+
+        seq = np.array([I0_to, I1_to, I2_to])
+        Ia, Ib, Ic = A @ seq.T
+
+        res['Ia'].append(Ia)
+        res['Ib'].append(Ib)
+        res['Ic'].append(Ic)
 
     print("I_F = ", abs(I_F))
 
