@@ -14,7 +14,8 @@
 
 
 # Set Parameters and Constants
-data_path = "data/CHW1Data.xlsx"
+# data_path = "data/CHW1Data.xlsx"
+data_path = "data/testData.xlsx"
 
 
 # Imports
@@ -135,6 +136,9 @@ for a in range(lineData.shape[0]):
     Y_bus0[lineData['To'][a] - 1, lineData['To'][a] - 1] -= lineData['Bc/2, p.u.'][a] * 1j* 3
     Y_bus0[lineData['From'][a] - 1, lineData['From'][a] - 1] -= lineData['Bc/2, p.u.'][a] * 1j* 3
 
+
+for a in range(num_busses):
+
     if busData['GenGround'][a] != 0:
         Y_bus0[a,a] += 1 / (busData['Xg0'][a] * 1j)
 
@@ -240,6 +244,9 @@ def calculate_3phase(bus, resultBus, Z_F):
     I_s = np.matrix([[I_0],[I_1],[I_2]])
     I_phase = np.matmul(a_identity, I_s)
 
+    print(printPolar(I_F))
+    print(I_s)
+
     print('I_a = ', printPolar(I_phase[0]))
     print('I_b = ', printPolar(I_phase[1]))
     print('I_c = ', printPolar(I_phase[2]))
@@ -325,6 +332,12 @@ def calculate_slg(bus, resultBus, Z_F):
     # I_F = 3 * V_F / (Z_nn-0 + Z_nn-1 + Z_nn-2 + 3Z_F)
     I_F = 3 * busData['Vf'][bus - 1] / (Z_0[bus - 1][bus - 1] + Z_1[bus - 1][bus - 1] + Z_2[bus - 1][bus - 1] + 3 * Z_F)
 
+    # print(busData['Vf'][bus - 1])
+    # print(Z_0[bus - 1][bus - 1])
+    # print(Z_1[bus - 1][bus - 1])
+    # print(Z_2[bus - 1][bus - 1])
+    # print(Z_F)
+
     # Because SLG fault
     I_0 = I_F / 3
     I_1 = I_F / 3
@@ -332,6 +345,9 @@ def calculate_slg(bus, resultBus, Z_F):
 
     I_s = np.matrix([[I_0],[I_1],[I_2]])
     I_phase = np.matmul(a_identity, I_s)
+
+    print(printPolar(I_F))
+    print(I_s)
 
     print('I_a = ', printPolar(I_phase[0]))
     print('I_b = ', printPolar(I_phase[1]))
@@ -423,6 +439,9 @@ def calculate_ll(bus, resultBus, Z_F):
     I_s = np.matrix([[I_0],[I_1],[I_2]])
     I_phase = np.matmul(a_identity, I_s)
 
+    print(printPolar(I_F))
+    print(I_s)
+
     print('I_a = ', printPolar(I_phase[0]))
     print('I_b = ', printPolar(I_phase[1]))
     print('I_c = ', printPolar(I_phase[2]))
@@ -510,6 +529,8 @@ def calculate_dlg(bus, resultBus, Z_F):
 
     I_s = np.matrix([[I_n0],[I_n1],[I_n2]])
     I_phase = np.matmul(a_identity, I_s)
+
+    print(I_s)
 
     print('I_a = ', printPolar(I_phase[0]))
     print('I_b = ', printPolar(I_phase[1]))
