@@ -51,7 +51,7 @@ A = np.array([[1, 1, 1],[1, a2, a],[1, a, a2]])
 # Y_Bus                                                   #### Ignores resistance (unimplemented)
 Y_bus = np.zeros(Y_shape, np.complex128)
 
-for a in range(num_busses):
+for a in range(lineData.shape[0]):
 
     # y_ii = y_ii + Y_ij
     Y_bus[lineData['From'][a] - 1, lineData['From'][a] - 1] += 1 / (lineData['X, p.u.'][a] * 1j)
@@ -120,7 +120,7 @@ Y_2 = Y_bus + Y_g2 + Y_D
 # Y_bus_0
 Y_bus0 = np.zeros(Y_shape, np.complex128)
 
-for a in range(num_busses):
+for a in range(lineData.shape[0]):
 
     # y_ii = y_ii + Y_ij
     Y_bus0[lineData['From'][a] - 1, lineData['From'][a] - 1] += 1 / (lineData['X, p.u.'][a] * 1j * 3)
