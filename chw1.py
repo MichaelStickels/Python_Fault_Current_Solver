@@ -146,18 +146,18 @@ Y_0 = Y_bus0 + Y_D
 #
 # Z_0 (Zero Sequence)
 Z_0 = np.linalg.inv(Y_0)
-pd.DataFrame(Z_0).to_csv("Z0Test.csv")
+# pd.DataFrame(Z_0).to_csv("Z0Test.csv")
 
 
 # Z_1 (Positive Sequence)
 Z_1 = np.linalg.inv(Y_1)
-pd.DataFrame(Z_1).to_csv("Z1Test.csv")
+# pd.DataFrame(Z_1).to_csv("Z1Test.csv")
 
 
 
 # Z_2 (Negative Sequence)
 Z_2 = np.linalg.inv(Y_2)
-pd.DataFrame(Z_2).to_csv("Z2Test.csv")
+# pd.DataFrame(Z_2).to_csv("Z2Test.csv")
 
 
 
