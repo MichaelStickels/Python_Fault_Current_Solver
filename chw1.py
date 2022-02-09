@@ -153,6 +153,7 @@ Z_0 = np.linalg.inv(Y_0)
 # pd.DataFrame(Z_0).to_csv("Z0Test.csv")
 
 
+
 # Z_1 (Positive Sequence)
 Z_1 = np.linalg.inv(Y_1)
 # pd.DataFrame(Z_1).to_csv("Z1Test.csv")
@@ -278,6 +279,7 @@ def calculate_3phase(bus, resultBus, Z_F):
     # print('!!!!! ', V_F, I_F * Z_1[resultBus - 1, bus - 1])
     Ef_2 = 0 # -- I2 = 0
 
+
     # need to find current through every LINE connection to fault bus
     for i in range(lineData['From'].shape[0]):
 
@@ -298,6 +300,14 @@ def calculate_3phase(bus, resultBus, Z_F):
             Ef_0_to = 0 # -- I0 = 0
             Ef_1_to = busData['Vf'][i_to] - I_F * Z_1[i_to, bus - 1] # -- If = I1
             Ef_2_to = 0 # -- I2 = 0
+
+            # print(i_to)
+            # print(busData['Vf'][i_to] - I_F * Z_1[i_to, bus - 1])
+            # print(busData['Vf'][i_to])
+            # print(I_F)
+            # print(Z_1[i_to, bus - 1])
+
+            # exit()
 
             # calculte I through each connection
             I0_to = (Ef_0 - Ef_0_to) / Z_0[i_to, bus - 1]
@@ -321,7 +331,11 @@ def calculate_3phase(bus, resultBus, Z_F):
         Ef_0_to = 0 # no source (terminals = 0)
         Ef_1_to = busData['Vf'][resultBus - 1] # source, terminals != 0
         Ef_2_to = 0 # no source (terminals = 0)
-
+        
+        # print(Ef_0_to)
+        # print(Ef_1_to)
+        # print(Ef_2_to)
+        
         # calculte I through each connection
         if busData['GenGround'][resultBus] == 1:
             I0_to = (Ef_0 - Ef_0_to) / (1j * busData['Xg0'][resultBus - 1])
@@ -415,6 +429,10 @@ def calculate_slg(bus, resultBus, Z_F):
             Ef_1_to = busData['Vf'][i_to] - I_1 * Z_1[i_to, bus - 1] # -- I1 = If
             Ef_2_to = - I_1 * Z_2[i_to, bus - 1] # -- I2 = I1
 
+            # print(Ef_0_to)
+            # print(Ef_1_to)
+            # print(Ef_2_to)
+
             # calculte I through each connection
             I0_to = (Ef_0 - Ef_0_to) / Z_0[i_to, bus - 1]
             I1_to = (Ef_1 - Ef_1_to) / Z_1[i_to, bus - 1] # -- does Z1 have to be multiplied by -1?
@@ -436,6 +454,10 @@ def calculate_slg(bus, resultBus, Z_F):
         Ef_0_to = 0 # no source (terminals = 0)
         Ef_1_to = busData['Vf'][resultBus - 1] # source, terminals != 0
         Ef_2_to = 0 # no source (terminals = 0)
+
+        # print(Ef_0_to)
+        # print(Ef_1_to)
+        # print(Ef_2_to)
 
         # calculte I through each connection
         if busData['GenGround'][resultBus] == 1:
@@ -524,6 +546,10 @@ def calculate_ll(bus, resultBus, Z_F):
             Ef_1_to = busData['Vf'][i_to] - I_1 * Z_1[i_to, bus - 1] # -- I1 = If
             Ef_2_to = I_1 * Z_2[i_to, bus - 1] # -- I2 = -I1
 
+            # print(Ef_0_to)
+            # print(Ef_1_to)
+            # print(Ef_2_to)
+
             # calculte I through each connection
             I0_to = (Ef_0 - Ef_0_to) / Z_0[i_to, bus - 1]
             I1_to = (Ef_1 - Ef_1_to) / Z_1[i_to, bus - 1] # -- does Z1 have to be multiplied by -1?
@@ -545,6 +571,10 @@ def calculate_ll(bus, resultBus, Z_F):
         Ef_0_to = 0 # no source (terminals = 0)
         Ef_1_to = busData['Vf'][resultBus - 1] # source, terminals != 0
         Ef_2_to = 0 # no source (terminals = 0)
+
+        # print(Ef_0_to)
+        # print(Ef_1_to)
+        # print(Ef_2_to)
 
         # calculte I through each connection
         I0_to = 0
@@ -629,6 +659,10 @@ def calculate_dlg(bus, resultBus, Z_F):
             Ef_1_to = busData['Vf'][i_to] - I_n1 * Z_1[i_to, bus - 1] # -- I1 = If
             Ef_2_to = - I_n2 * Z_2[i_to, bus - 1] # -- I2 = -I1
 
+            # print(Ef_0_to)
+            # print(Ef_1_to)
+            # print(Ef_2_to)
+
             # calculte I through each connection
             I0_to = (Ef_0 - Ef_0_to) / Z_0[i_to, bus - 1]
             I1_to = (Ef_1 - Ef_1_to) / Z_1[i_to, bus - 1] # -- does Z1 have to be multiplied by -1?
@@ -650,6 +684,10 @@ def calculate_dlg(bus, resultBus, Z_F):
         Ef_0_to = 0 # no source (terminals = 0)
         Ef_1_to = busData['Vf'][resultBus - 1] # source, terminals != 0
         Ef_2_to = 0 # no source (terminals = 0)
+
+        # print(Ef_0_to)
+        # print(Ef_1_to)
+        # print(Ef_2_to)
 
         # calculte I through each connection
         I0_to = (Ef_0 - Ef_0_to) / Z_0[i_to, bus - 1]
