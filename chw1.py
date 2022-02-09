@@ -7,15 +7,15 @@
 #
 # Created Date: 01/28/2022
 #
-# Version: 0.1
+# Version: B1.0
 #
 # ---------------------------------------------------------------------------
 
 
 
 # Set Parameters and Constants
-# data_path = "data/CHW1Data.xlsx"
-data_path = "data/testData.xlsx"
+data_path = "data/CHW1Data.xlsx"
+# data_path = "data/testData.xlsx"
 
 
 # Imports
@@ -164,6 +164,21 @@ Z_2 = np.linalg.inv(Y_2)
 # pd.DataFrame(Z_2).to_csv("Z2Test.csv")
 
 
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# Helper Functions
+
+def printPolar(num):
+
+    r = round(cmath.polar(num)[0], 5)
+    theta = round((180 / math.pi) * cmath.polar(num)[1], 5)
+
+    return('{} ∠{}° p.u.'.format(r, theta))
+
+
+
+
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 # Itereate Faults (from data)
 
@@ -225,7 +240,7 @@ def iterateFaults(faults):
 # Fault Calculations
 
 # calculate results bus info
-res = {'Fault': [], 'To': [], 'Ia': [], 'Ib': [], 'Ic': []}
+# res = {'Fault': [], 'To': [], 'Ia': [], 'Ib': [], 'Ic': []}
 
 
 
@@ -244,12 +259,16 @@ def calculate_3phase(bus, resultBus, Z_F):
     I_s = np.matrix([[I_0],[I_1],[I_2]])
     I_phase = np.matmul(a_identity, I_s)
 
-    print(printPolar(I_F))
-    print(I_s)
+    print('results -')
 
+    print('fault bus:')
+    print('I_F =', printPolar(I_F))
+    # print(I_s)
     print('I_a = ', printPolar(I_phase[0]))
     print('I_b = ', printPolar(I_phase[1]))
     print('I_c = ', printPolar(I_phase[2]))
+
+    res = {'Fault': [], 'To': [], 'Ia': [], 'Ib': [], 'Ic': []}
 
     V_F = busData['Vf'][resultBus - 1]
 
@@ -297,7 +316,7 @@ def calculate_3phase(bus, resultBus, Z_F):
         res['Fault'].append(resultBus)
 
         # generator connected to fault bus
-        res['To'].append('gen')
+        res['To'].append(-1)
 
         Ef_0_to = 0 # no source (terminals = 0)
         Ef_1_to = busData['Vf'][resultBus - 1] # source, terminals != 0
@@ -322,7 +341,18 @@ def calculate_3phase(bus, resultBus, Z_F):
 
     # print("I_F = ", abs(I_F))
 
-    # print('res', res)
+    print('result bus:')
+
+    for a in range(len(res['Fault'])):
+
+        if(res['To'][a] == -1):
+
+            print('generator current (I_a, I_b, I_c): ', printPolar(res['Ia'][a]), ', ', printPolar(res['Ib'][a]), printPolar(res['Ic'][a]),sep='')
+        
+        else:
+            print('line current bus ', res['Fault'][a], ' to ', res['To'][a], ' (I_a, I_b, I_c): ', printPolar(res['Ia'][a]), ', ', printPolar(res['Ib'][a]), printPolar(res['Ic'][a]),sep='')
+    
+
     return()
 
 
@@ -346,12 +376,16 @@ def calculate_slg(bus, resultBus, Z_F):
     I_s = np.matrix([[I_0],[I_1],[I_2]])
     I_phase = np.matmul(a_identity, I_s)
 
-    print(printPolar(I_F))
-    print(I_s)
+    print('results -')
 
+    print('fault bus:')
+    print('I_F =', printPolar(I_F))
+    # print(I_s)
     print('I_a = ', printPolar(I_phase[0]))
     print('I_b = ', printPolar(I_phase[1]))
     print('I_c = ', printPolar(I_phase[2]))
+
+    res = {'Fault': [], 'To': [], 'Ia': [], 'Ib': [], 'Ic': []}
 
 
     V_F = busData['Vf'][resultBus - 1]
@@ -420,6 +454,18 @@ def calculate_slg(bus, resultBus, Z_F):
         res['Ic'].append(Ic)
 
 
+    print('result bus:')
+
+    for a in range(len(res['Fault'])):
+
+        if(res['To'][a] == -1):
+
+            print('generator current (I_a, I_b, I_c): ', printPolar(res['Ia'][a]), ', ', printPolar(res['Ib'][a]), printPolar(res['Ic'][a]),sep='')
+        
+        else:
+            print('line current bus ', res['Fault'][a], ' to ', res['To'][a], ' (I_a, I_b, I_c): ', printPolar(res['Ia'][a]), ', ', printPolar(res['Ib'][a]), printPolar(res['Ic'][a]),sep='')
+    
+
     # print("I_F = ", abs(I_F))
     # print(res)
     return()
@@ -439,12 +485,16 @@ def calculate_ll(bus, resultBus, Z_F):
     I_s = np.matrix([[I_0],[I_1],[I_2]])
     I_phase = np.matmul(a_identity, I_s)
 
-    print(printPolar(I_F))
-    print(I_s)
+    print('results -')
 
+    print('fault bus:')
+    print('I_F =', printPolar(I_F))
+    # print(I_s)
     print('I_a = ', printPolar(I_phase[0]))
     print('I_b = ', printPolar(I_phase[1]))
     print('I_c = ', printPolar(I_phase[2]))
+
+    res = {'Fault': [], 'To': [], 'Ia': [], 'Ib': [], 'Ic': []}
 
 
     V_F = busData['Vf'][resultBus - 1]
@@ -509,6 +559,20 @@ def calculate_ll(bus, resultBus, Z_F):
         res['Ib'].append(Ib)
         res['Ic'].append(Ic)
 
+
+
+    print('result bus:')
+
+    for a in range(len(res['Fault'])):
+
+        if(res['To'][a] == -1):
+
+            print('generator current (I_a, I_b, I_c): ', printPolar(res['Ia'][a]), ', ', printPolar(res['Ib'][a]), printPolar(res['Ic'][a]),sep='')
+        
+        else:
+            print('line current bus ', res['Fault'][a], ' to ', res['To'][a], ' (I_a, I_b, I_c): ', printPolar(res['Ia'][a]), ', ', printPolar(res['Ib'][a]), printPolar(res['Ic'][a]),sep='')
+    
+
     # print("I_F = ", abs(I_F))
     # print(res)
     return()
@@ -530,11 +594,16 @@ def calculate_dlg(bus, resultBus, Z_F):
     I_s = np.matrix([[I_n0],[I_n1],[I_n2]])
     I_phase = np.matmul(a_identity, I_s)
 
-    print(I_s)
+    print('results -')
 
+    # print(I_s)
+
+    print('fault bus:')
     print('I_a = ', printPolar(I_phase[0]))
     print('I_b = ', printPolar(I_phase[1]))
     print('I_c = ', printPolar(I_phase[2]))
+
+    res = {'Fault': [], 'To': [], 'Ia': [], 'Ib': [], 'Ic': []}
 
     Ef_0 = - I_n0 * Z_0[resultBus - 1, bus - 1] # -- I0 = 0
     Ef_1 = V_F - I_n1 * Z_1[resultBus - 1, bus - 1] # -- If = I1
@@ -595,21 +664,23 @@ def calculate_dlg(bus, resultBus, Z_F):
         res['Ic'].append(Ic)
 
 
+
+
+    print('result bus:')
+
+    for a in range(len(res['Fault'])):
+
+        if(res['To'][a] == -1):
+
+            print('generator current (I_a, I_b, I_c): ', printPolar(res['Ia'][a]), ', ', printPolar(res['Ib'][a]), printPolar(res['Ic'][a]),sep='')
+        
+        else:
+            print('line current bus ', res['Fault'][a], ' to ', res['To'][a], ' (I_a, I_b, I_c): ', printPolar(res['Ia'][a]), ', ', printPolar(res['Ib'][a]), printPolar(res['Ic'][a]),sep='')
+    
+
     # print(res)
 
     return()
-
-
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-# Helper Functions
-
-def printPolar(num):
-
-    r = round(cmath.polar(num)[0], 5)
-    theta = round((180 / math.pi) * cmath.polar(num)[1], 5)
-
-    return('{} ∠{}° p.u.'.format(r, theta))
 
 
 
