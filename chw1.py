@@ -176,7 +176,7 @@ def iterateFaults(faults):
             print('Bus:', faults['Fault Bus'][a])
             print('Result Bus:', faults['Results Bus'][a])
             print('Z_F:', faults['Zf'][a])
-            calculate_3phase(faults['Fault Bus'][a], faults['Results Bus'][a], faults['Zf'][a])
+            calculate_3phase(faults['Fault Bus'][a], faults['Results Bus'][a], faults['Zf'][a] * 1j)
             print()
 
         elif (type == 'SLG'):
@@ -186,7 +186,7 @@ def iterateFaults(faults):
             print('Bus:', faults['Fault Bus'][a])
             print('Result Bus:', faults['Results Bus'][a])
             print('Z_F:', faults['Zf'][a])
-            calculate_slg(faults['Fault Bus'][a], faults['Results Bus'][a], faults['Zf'][a])
+            calculate_slg(faults['Fault Bus'][a], faults['Results Bus'][a], faults['Zf'][a] * 1j)
             print()
 
         elif (type == 'LL'):
@@ -196,7 +196,7 @@ def iterateFaults(faults):
             print('Bus:', faults['Fault Bus'][a])
             print('Result Bus:', faults['Results Bus'][a])
             print('Z_F:', faults['Zf'][a])
-            calculate_ll(faults['Fault Bus'][a], faults['Results Bus'][a], faults['Zf'][a])
+            calculate_ll(faults['Fault Bus'][a], faults['Results Bus'][a], faults['Zf'][a] * 1j)
             print()
 
         elif (type == 'DLG'):
@@ -206,7 +206,7 @@ def iterateFaults(faults):
             print('Bus:', faults['Fault Bus'][a])
             print('Result Bus:', faults['Results Bus'][a])
             print('Z_F:', faults['Zf'][a])
-            calculate_dlg(faults['Fault Bus'][a], faults['Results Bus'][a], faults['Zf'][a])
+            calculate_dlg(faults['Fault Bus'][a], faults['Results Bus'][a], faults['Zf'][a] * 1j)
             print()
 
         else:
@@ -223,19 +223,33 @@ def iterateFaults(faults):
 # calculate results bus info
 res = {'Fault': [], 'To': [], 'Ia': [], 'Ib': [], 'Ic': []}
 
+
+
+
 # Calculate output for 3phase fault
 def calculate_3phase(bus, resultBus, Z_F):
 
     # I_F = V_F / (Z_nn-1 + Z_F)
     I_F = busData['Vf'][bus - 1] / (Z_1[bus - 1][bus - 1] + Z_F)
 
+    # Because 3ph fault
+    I_0 = 0
+    I_1 = I_F
+    I_2 = 0
+
+    I_s = np.matrix([[I_0],[I_1],[I_2]])
+    I_phase = np.matmul(a_identity, I_s)
+
+    print('I_a = ', printPolar(I_phase[0]))
+    print('I_b = ', printPolar(I_phase[1]))
+    print('I_c = ', printPolar(I_phase[2]))
 
     V_F = busData['Vf'][resultBus - 1]
 
     # E from result bus to fault
     Ef_0 = 0 # -- I0 = 0
     Ef_1= V_F - I_F * Z_1[resultBus - 1, bus - 1] # -- If = I1
-    print('!!!!! ', V_F, I_F * Z_1[resultBus - 1, bus - 1])
+    # print('!!!!! ', V_F, I_F * Z_1[resultBus - 1, bus - 1])
     Ef_2 = 0 # -- I2 = 0
 
     # need to find current through every LINE connection to fault bus
@@ -243,14 +257,14 @@ def calculate_3phase(bus, resultBus, Z_F):
 
         if lineData['From'][i] == resultBus or lineData['To'][i] == resultBus:
             res['Fault'].append(resultBus)
-            print('    res bus', resultBus)
+            # print('    res bus', resultBus)
 
             # LINE connected to fault bus
             if lineData['From'][i] == resultBus:
                 i_to = lineData['To'][i]
             else:
                 i_to = lineData['From'][i]
-            print('    i_to', i_to)
+            # print('    i_to', i_to)
             res['To'].append(i_to)
             # adjust for zero-based indexing in python
             i_to -= 1
@@ -288,7 +302,7 @@ def calculate_3phase(bus, resultBus, Z_F):
         else:
             I0_to = 0
         I1_to = (Ef_1 - Ef_1_to) / (1j * busData['Xg1'][resultBus - 1])
-        print('    I1 to -- ', I1_to, 'Ef_1 -- ', Ef_1, 'Ef_1_to -- ', Ef_1_to)
+        # print('    I1 to -- ', I1_to, 'Ef_1 -- ', Ef_1, 'Ef_1_to -- ', Ef_1_to)
         I2_to = (Ef_2 - Ef_2_to) / (1j * busData['Xg2'][resultBus - 1])
         seq = np.array([I0_to, I1_to, I2_to])
         Ia, Ib, Ic = A @ seq.T
@@ -299,9 +313,9 @@ def calculate_3phase(bus, resultBus, Z_F):
 
 
 
-    print("I_F = ", abs(I_F))
+    # print("I_F = ", abs(I_F))
 
-    print('res', res)
+    # print('res', res)
     return()
 
 
@@ -310,6 +324,19 @@ def calculate_slg(bus, resultBus, Z_F):
 
     # I_F = 3 * V_F / (Z_nn-0 + Z_nn-1 + Z_nn-2 + 3Z_F)
     I_F = 3 * busData['Vf'][bus - 1] / (Z_0[bus - 1][bus - 1] + Z_1[bus - 1][bus - 1] + Z_2[bus - 1][bus - 1] + 3 * Z_F)
+
+    # Because SLG fault
+    I_0 = I_F / 3
+    I_1 = I_F / 3
+    I_2 = I_F / 3
+
+    I_s = np.matrix([[I_0],[I_1],[I_2]])
+    I_phase = np.matmul(a_identity, I_s)
+
+    print('I_a = ', printPolar(I_phase[0]))
+    print('I_b = ', printPolar(I_phase[1]))
+    print('I_c = ', printPolar(I_phase[2]))
+
 
     V_F = busData['Vf'][resultBus - 1]
     I_1 = I_F / 3
@@ -322,14 +349,14 @@ def calculate_slg(bus, resultBus, Z_F):
 
         if lineData['From'][i] == resultBus or lineData['To'][i] == resultBus:
             res['Fault'].append(resultBus)
-            print('    res bus', resultBus)
+            # print('    res bus', resultBus)
 
             # LINE connected to fault bus
             if lineData['From'][i] == resultBus:
                 i_to = lineData['To'][i]
             else:
                 i_to = lineData['From'][i]
-            print('    i_to', i_to)
+            # print('    i_to', i_to)
             res['To'].append(i_to)
             # adjust for zero-based indexing in python
             i_to -= 1
@@ -366,7 +393,7 @@ def calculate_slg(bus, resultBus, Z_F):
         else:
             I0_to = 0
         I1_to = (Ef_1 - Ef_1_to) / (1j * busData['Xg1'][resultBus - 1])
-        print('    I1 to -- ', I1_to, 'Ef_1 -- ', Ef_1, 'Ef_1_to -- ', Ef_1_to)
+        # print('    I1 to -- ', I1_to, 'Ef_1 -- ', Ef_1, 'Ef_1_to -- ', Ef_1_to)
         I2_to = (Ef_2 - Ef_2_to) / (1j * busData['Xg2'][resultBus - 1])
 
         seq = np.array([I0_to, I1_to, I2_to])
@@ -377,8 +404,8 @@ def calculate_slg(bus, resultBus, Z_F):
         res['Ic'].append(Ic)
 
 
-    print("I_F = ", abs(I_F))
-    print(res)
+    # print("I_F = ", abs(I_F))
+    # print(res)
     return()
 
 
@@ -387,6 +414,18 @@ def calculate_ll(bus, resultBus, Z_F):
 
     # I_F = -j * sqrt(3) * V_F / (Z_nn-1 + Z_nn-2 + Z_F)
     I_F = -1j * np.sqrt(3) * busData['Vf'][bus - 1] / (Z_1[bus - 1][bus - 1] + Z_2[bus - 1][bus - 1] + Z_F)
+
+    # Because LL fault
+    I_0 = 0
+    I_1 = I_F / ( -1j * np.sqrt(3))
+    I_2 = -I_1
+
+    I_s = np.matrix([[I_0],[I_1],[I_2]])
+    I_phase = np.matmul(a_identity, I_s)
+
+    print('I_a = ', printPolar(I_phase[0]))
+    print('I_b = ', printPolar(I_phase[1]))
+    print('I_c = ', printPolar(I_phase[2]))
 
 
     V_F = busData['Vf'][resultBus - 1]
@@ -400,14 +439,14 @@ def calculate_ll(bus, resultBus, Z_F):
 
         if lineData['From'][i] == resultBus or lineData['To'][i] == resultBus:
             res['Fault'].append(resultBus)
-            print('    res bus', resultBus)
+            # print('    res bus', resultBus)
 
             # LINE connected to fault bus
             if lineData['From'][i] == resultBus:
                 i_to = lineData['To'][i]
             else:
                 i_to = lineData['From'][i]
-            print('    i_to', i_to)
+            # print('    i_to', i_to)
             res['To'].append(i_to)
             # adjust for zero-based indexing in python
             i_to -= 1
@@ -441,7 +480,7 @@ def calculate_ll(bus, resultBus, Z_F):
         # calculte I through each connection
         I0_to = 0
         I1_to = (Ef_1 - Ef_1_to) / (1j * busData['Xg1'][resultBus - 1])
-        print('    I1 to -- ', I1_to, 'Ef_1 -- ', Ef_1, 'Ef_1_to -- ', Ef_1_to)
+        # print('    I1 to -- ', I1_to, 'Ef_1 -- ', Ef_1, 'Ef_1_to -- ', Ef_1_to)
         I2_to = (Ef_2 - Ef_2_to) / (1j * busData['Xg2'][resultBus - 1])
 
         seq = np.array([I0_to, I1_to, I2_to])
@@ -451,8 +490,8 @@ def calculate_ll(bus, resultBus, Z_F):
         res['Ib'].append(Ib)
         res['Ic'].append(Ic)
 
-    print("I_F = ", abs(I_F))
-    print(res)
+    # print("I_F = ", abs(I_F))
+    # print(res)
     return()
 
 
@@ -472,22 +511,26 @@ def calculate_dlg(bus, resultBus, Z_F):
     I_s = np.matrix([[I_n0],[I_n1],[I_n2]])
     I_phase = np.matmul(a_identity, I_s)
 
+    print('I_a = ', printPolar(I_phase[0]))
+    print('I_b = ', printPolar(I_phase[1]))
+    print('I_c = ', printPolar(I_phase[2]))
+
     Ef_0 = - I_n0 * Z_0[resultBus - 1, bus - 1] # -- I0 = 0
-    Ef_1 = V_F - - I_n1 * Z_1[resultBus - 1, bus - 1] # -- If = I1
+    Ef_1 = V_F - I_n1 * Z_1[resultBus - 1, bus - 1] # -- If = I1
     Ef_2 =  - I_n2 * Z_2[resultBus - 1, bus - 1] # -- I2 = -I1
 
     for i in range(lineData['From'].shape[0]):
 
         if lineData['From'][i] == resultBus or lineData['To'][i] == resultBus:
             res['Fault'].append(resultBus)
-            print('    res bus', resultBus)
+            # print('    res bus', resultBus)
 
             # LINE connected to fault bus
             if lineData['From'][i] == resultBus:
                 i_to = lineData['To'][i]
             else:
                 i_to = lineData['From'][i]
-            print('    i_to', i_to)
+            # print('    i_to', i_to)
             res['To'].append(i_to)
             # adjust for zero-based indexing in python
             i_to -= 1
@@ -531,11 +574,7 @@ def calculate_dlg(bus, resultBus, Z_F):
         res['Ic'].append(Ic)
 
 
-    print('I_a = ', cmath.polar(I_phase[0]))
-    print('I_b = ', cmath.polar(I_phase[1]))
-    print('I_c = ', cmath.polar(I_phase[2]))
-
-    print(res)
+    # print(res)
 
     return()
 
@@ -543,6 +582,13 @@ def calculate_dlg(bus, resultBus, Z_F):
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 # Helper Functions
+
+def printPolar(num):
+
+    r = round(cmath.polar(num)[0], 5)
+    theta = round((180 / math.pi) * cmath.polar(num)[1], 5)
+
+    return('{} ∠{}° p.u.'.format(r, theta))
 
 
 
