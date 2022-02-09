@@ -159,7 +159,9 @@ Z_1 = np.linalg.inv(Y_1)
 Z_2 = np.linalg.inv(Y_2)
 # pd.DataFrame(Z_2).to_csv("Z2Test.csv")
 
-
+# fix later to correct value of a
+a = 1j
+A = np.array([[1,1,1], [1, a**2, a], [1, a, a**2]])
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 # Itereate Faults (from data)
@@ -227,6 +229,45 @@ def calculate_3phase(bus, resultBus, Z_F):
     # I_F = V_F / (Z_nn-1 + Z_F)
     I_F = busData['Vf'][bus - 1] / (Z_1[bus - 1][bus - 1] + Z_F)
 
+    # calculate results bus info
+    res = pd.DataFrame()
+    res['Fault bus'] = [bus, bus, bus]
+
+    V_F = busData['Vf'][bus - 1]
+
+    # E from faulted bus to fault
+    Ef_0 = 0 # -- I0 = 0
+    Ef_1= V_F - I_F * Z_F # -- If = I1
+    Ef_2 = 0 # -- I2 = 0
+    # need to find current through every connection to fault bus
+    for i in range(lineData['From'].shape):
+        if lineData['From'][i] == (bus - 1):
+            # LINE connected to fault bus
+            i_to = lineData['To'][i]
+            res['To'].append(i_To)
+            # adjust for zero-based indexing in python
+            i_to -= 1
+            # calculate E for To bus
+            Ef0_to = 0 # -- I0 = 0
+            Ef_1_to = busData['Vf'][i_to] - I_F * Z1[i_to, bus - 1] # -- If = I1
+            Ef_2_to = 0 # -- I2 = 0
+
+            # calculte I through each connection
+            I0_to = (Ef_0 - Ef0_to) / Z1[i_to, bus - 1]
+            I1_to = (Ef_1 - Ef_1_to) / Z1[i_to, bus - 1] # -- does Z1 have to be multiplied by -1?
+            I2_to = (Ef_2 - Ef_2_to) / Z1[i_to, bus - 1]
+            seq = np.array([I0_to, I1_to, I2_to])
+            phase = A @ seq.T
+
+            res['Ia'] = phase[0]
+            res['Ib'] = phase[1]
+            res['Ic'] = phase[2]
+
+        elif busData['Pd p.u.'][bus - 1] != 0:
+            # generator connected to fault bus
+            res['To'].append(0) # -- 0 means connected to generator (might work out later)
+            
+
     print("I_F = ", abs(I_F))
 
     return()
@@ -292,4 +333,3 @@ print("Fault Current Solver")
 print("")
 
 iterateFaults(faultData)
-
