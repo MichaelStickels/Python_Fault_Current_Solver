@@ -3,11 +3,11 @@
 #
 # UW EE 455 Winter 2022
 #
-# Created By: Michael Stickels, ...
+# Created By: Michael Stickels, Margot Adam, Mike Mayhew, Stefan Smigoc
 #
 # Created Date: 01/28/2022
 #
-# Version: B1.0
+# Version: 1.1
 #
 # ---------------------------------------------------------------------------
 
